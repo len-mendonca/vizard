@@ -8,10 +8,13 @@ import mongoose from "mongoose";
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
     const user = await User.findById(userId);
-    const accessToken = user.generateAccessToken();
-    const refreshToken = user.generateRefreshToken();
+
+    const accessToken = await user.generateAccessToken();
+    const refreshToken = await user.generateRefreshToken();
+
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
+    const newuser = await User.findById(userId);
 
     return { accessToken, refreshToken };
   } catch (error) {
@@ -171,17 +174,18 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     secure: true,
   };
 
-  const { accessToken, newRefreshToken } = await generateAccessAndRefreshTokens(
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
     user._id
   );
+
   return res
     .status(200)
     .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", newRefreshToken, options)
+    .cookie("refreshToken", refreshToken, options)
     .json(
       new ApiResponse(
         200,
-        { accessToken, refreshToken: newRefreshToken },
+        { accessToken, refreshToken: refreshToken },
         "access token refreshed"
       )
     );
